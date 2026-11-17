@@ -1,16 +1,21 @@
 use std::{
-    cmp::Ordering, fmt::{Debug, Display}, ops::{Add, Sub}, write,
+    cmp::Ordering,
+    fmt::{Debug, Display},
+    ops::{Add, Sub},
+    write,
 };
 
-use derive_more::{From, Into, Add, Sub, Neg, Mul};
-
+use derive_more::{Add, From, Into, Mul, Neg, Sub};
+use pathfinding::num_traits::Zero;
 
 use crate::graph::vec2c::Vec2C;
 
 /// Type of integer for coordinates and geometric calculation.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, From, Into, Add, Sub, Neg, Mul)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, From, Into, Add, Sub, Neg, Mul,
+)]
 #[mul(forward)]
-pub(crate) struct Coord(i32);
+pub struct Coord(i32);
 
 impl Display for Coord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -20,6 +25,16 @@ impl Display for Coord {
 
 impl Coord {
     pub const ZERO: Self = Self(0);
+}
+
+impl Zero for Coord {
+    fn zero() -> Self {
+        Self::ZERO
+    }
+
+    fn is_zero(&self) -> bool {
+        *self == Self::ZERO
+    }
 }
 
 /// A vertex records its position based on cartesian coordinate system.
@@ -85,7 +100,6 @@ impl Sub<Vec2C> for Vertex {
 }
 
 impl Vertex {
-
     pub const ORIGIN: Self = Self::new(Coord::ZERO, Coord::ZERO);
 
     pub const fn new(x: Coord, y: Coord) -> Self {

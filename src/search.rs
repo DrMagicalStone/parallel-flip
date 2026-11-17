@@ -1,1 +1,1 @@
-mod graph_as_flip_graph_node;
+pub mod graph_as_flip_graph_node;

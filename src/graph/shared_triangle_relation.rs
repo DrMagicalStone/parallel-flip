@@ -1,4 +1,7 @@
-use std::{fmt::{Debug, Display}, write, writeln};
+use std::{
+    fmt::{Debug, Display},
+    write, writeln,
+};
 
 use crate::graph::{basic_alge::Cyclic4Indexed, basic_geom::QuadrilateralEdgeIndex, graph::UIndex};
 
@@ -29,9 +32,7 @@ impl SharedTriangleEntry {
         }
     }
 
-    pub fn new(
-        index_quadrilateral_on_edges: [Option<UIndex>; 4]
-    ) -> SharedTriangleEntry {
+    pub fn new(index_quadrilateral_on_edges: [Option<UIndex>; 4]) -> SharedTriangleEntry {
         SharedTriangleEntry {
             index_quadrilateral_on_edges: Cyclic4Indexed::new(index_quadrilateral_on_edges),
         }
@@ -53,11 +54,15 @@ impl SharedTriangleEntry {
         &mut self.index_quadrilateral_on_edges.value
     }
 
-    pub fn get_quadrilateral_on_edges(&self) -> &Cyclic4Indexed<QuadrilateralEdgeIndex, Option<UIndex>> {
+    pub fn get_quadrilateral_on_edges(
+        &self,
+    ) -> &Cyclic4Indexed<QuadrilateralEdgeIndex, Option<UIndex>> {
         &self.index_quadrilateral_on_edges
     }
 
-    pub fn get_quadrilateral_on_edges_mut(&mut self) -> &mut Cyclic4Indexed<QuadrilateralEdgeIndex, Option<UIndex>> {
+    pub fn get_quadrilateral_on_edges_mut(
+        &mut self,
+    ) -> &mut Cyclic4Indexed<QuadrilateralEdgeIndex, Option<UIndex>> {
         &mut self.index_quadrilateral_on_edges
     }
 }
@@ -85,4 +90,3 @@ impl Clone for SharedTriangleEntry {
 }
 
 impl Copy for SharedTriangleEntry {}
-

@@ -23,20 +23,17 @@
 //!
 //! For both accuracy and performance, the graph module avoids float points and use integers only.
 
-pub(crate) mod graph;
-pub(crate) mod intersection_graph;
-pub(crate) mod quadrilateral;
-pub(crate) mod shared_triangle_relation;
+pub mod graph;
+pub mod intersection_graph;
+pub mod quadrilateral;
+pub mod shared_triangle_relation;
 
-pub(crate) mod vec2c;
-pub(crate) mod vertex;
-pub(crate) mod edge;
-pub(crate) mod basic_geom;
-pub(crate) mod basic_alge;
-pub(crate) mod graph_entry;
-pub(crate) mod quadrilateral_triangle_view;
-pub(crate) mod quadrilateral_edge_view;
-pub(crate) mod indexes;
+pub mod basic_alge;
+pub mod basic_geom;
+pub mod edge;
+pub mod indexes;
+pub mod vec2c;
+pub mod vertex;
 
 #[cfg(test)]
 mod tests {}

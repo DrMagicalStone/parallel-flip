@@ -1,6 +1,14 @@
-use std::{debug_assert, fmt::{Debug, Display}};
+use std::{
+    debug_assert,
+    fmt::{Debug, Display},
+};
 
-use crate::graph::{basic_alge::Cyclic4Indexed, basic_geom::{QuadrilateralVertexIndex}, vec2c::cross, vertex::{Coord, Vertex}};
+use crate::graph::{
+    basic_alge::Cyclic4Indexed,
+    basic_geom::QuadrilateralVertexIndex,
+    vec2c::cross,
+    vertex::{Coord, Vertex},
+};
 
 /// A quadrilateral storages its four vertexes.
 /// Every time a quadrilateral changed and the change may lead to its ability of flipping changes,
@@ -14,7 +22,10 @@ pub struct Quadrilateral {
 
 impl Debug for Quadrilateral {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Quadrilateral").field("vertexes", &self.vertexes).field("flippable", &self.flippable).finish()
+        f.debug_struct("Quadrilateral")
+            .field("vertexes", &self.vertexes)
+            .field("flippable", &self.flippable)
+            .finish()
     }
 }
 
@@ -37,10 +48,6 @@ impl Quadrilateral {
         }
     }
 
-    pub fn get_vertexes_in_tuple(&self) -> (Vertex, Vertex, Vertex, Vertex) {
-        (self.vertexes.value[0], self.vertexes.value[1], self.vertexes.value[2], self.vertexes.value[3])
-    }
-
     pub fn get_vertexes_in_slice(&self) -> [Vertex; 4] {
         self.vertexes.value
     }
@@ -54,9 +61,15 @@ impl Quadrilateral {
     }
 
     pub(crate) fn flip(&mut self) -> bool {
-        debug_assert!(self.is_flippable());
+        debug_assert!(check_is_flippable(
+            self.vertexes.value[0],
+            self.vertexes.value[1],
+            self.vertexes.value[2],
+            self.vertexes.value[3],
+        ));
 
-        let rotate_left = self.vertexes[QuadrilateralVertexIndex::B] > self.vertexes[QuadrilateralVertexIndex::D];
+        let rotate_left =
+            self.vertexes[QuadrilateralVertexIndex::B] > self.vertexes[QuadrilateralVertexIndex::D];
         if rotate_left {
             self.vertexes.value.rotate_left(1);
         } else {
@@ -65,17 +78,19 @@ impl Quadrilateral {
         rotate_left
     }
 
-    fn update_is_flippable(&mut self) {
-        self.flippable =
-            check_is_flippable(self.vertexes.value[0], self.vertexes.value[1], self.vertexes.value[2], self.vertexes.value[3]);
+    pub fn update_is_flippable(&mut self) {
+        self.flippable = check_is_flippable(
+            self.vertexes.value[0],
+            self.vertexes.value[1],
+            self.vertexes.value[2],
+            self.vertexes.value[3],
+        );
     }
 
     pub fn is_flippable(&self) -> bool {
         self.flippable
     }
 }
-
-
 
 fn check_is_flippable(
     vertex_a: Vertex,

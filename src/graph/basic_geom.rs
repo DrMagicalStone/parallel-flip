@@ -1,21 +1,17 @@
-use std::ops::{Add, Deref, Sub};
 use derive_more::{From, Into};
+use std::ops::{Add, Deref, Sub};
 
 use crate::graph::basic_alge::Cyclic4;
-
 
 /// Names (indexes) of the four vertexes of a quadrilateral.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, From, Into)]
 pub struct QuadrilateralVertexIndex(Cyclic4);
 
-
 /// Names (indexes) of the four edges of a quadrilateral.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, From, Into)]
 pub struct QuadrilateralEdgeIndex(Cyclic4);
 
-
 impl QuadrilateralVertexIndex {
-
     pub const A: Self = Self(Cyclic4::new(0));
     pub const B: Self = Self(Cyclic4::new(1));
     pub const C: Self = Self(Cyclic4::new(2));
@@ -36,7 +32,10 @@ impl QuadrilateralVertexIndex {
     }
 
     pub fn get_prev_and_next_edge(self) -> [QuadrilateralEdgeIndex; 2] {
-        [QuadrilateralEdgeIndex(self.0.prev()), QuadrilateralEdgeIndex(self.0)]
+        [
+            QuadrilateralEdgeIndex(self.0.prev()),
+            QuadrilateralEdgeIndex(self.0),
+        ]
     }
 }
 
@@ -57,7 +56,6 @@ impl Sub<Cyclic4> for QuadrilateralVertexIndex {
 }
 
 impl QuadrilateralEdgeIndex {
-
     pub const AB: Self = Self(Cyclic4::new(0));
     pub const BC: Self = Self(Cyclic4::new(1));
     pub const CD: Self = Self(Cyclic4::new(2));
@@ -77,8 +75,11 @@ impl QuadrilateralEdgeIndex {
         Self(self.0.opposite())
     }
 
-    pub fn get_prev_and_next_edge(self) -> [QuadrilateralVertexIndex; 2] {
-        [QuadrilateralVertexIndex(self.0), QuadrilateralVertexIndex(self.0.next())]
+    pub fn get_prev_and_next_vertex(self) -> [QuadrilateralVertexIndex; 2] {
+        [
+            QuadrilateralVertexIndex(self.0),
+            QuadrilateralVertexIndex(self.0.next()),
+        ]
     }
 }
 

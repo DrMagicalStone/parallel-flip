@@ -1,7 +1,9 @@
-
-
 use std::{
-    fs::File, io::{BufReader, BufWriter}, ops::Deref,
+    collections::{BTreeSet, HashSet},
+    fs::{File, read_dir},
+    io::{BufReader, BufWriter},
+    ops::Deref,
+    path::{Path, PathBuf},
 };
 
 use itertools::Itertools;
@@ -9,7 +11,9 @@ use serde::{Deserialize, Serialize};
 use typed_index_collections::{TiSlice, TiVec};
 
 use crate::graph::{
-    graph::Graph, indexes::{IndexedEdge, IndexedEdgeIndex, TriangulationIndex, VertexIndex}, vertex::{Coord, Vertex},
+    graph::Graph,
+    indexes::{IndexedEdge, IndexedEdgeIndex, TriangulationIndex, VertexIndex},
+    vertex::{Coord, Vertex},
 };
 
 type FlipsOfAStep = Vec<[usize; 2]>;
@@ -30,7 +34,8 @@ impl Deref for SerializableCoord {
 impl Serialize for SerializableCoord {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
-        S: serde::Serializer {
+        S: serde::Serializer,
+    {
         Into::<i32>::into(self.0).serialize(serializer)
     }
 }
@@ -38,7 +43,8 @@ impl Serialize for SerializableCoord {
 impl<'de> Deserialize<'de> for SerializableCoord {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        D: serde::Deserializer<'de> {
+        D: serde::Deserializer<'de>,
+    {
         Result::Ok(Self(Coord::from(i32::deserialize(deserializer)?)))
     }
 }
@@ -47,8 +53,8 @@ impl<'de> Deserialize<'de> for SerializableCoord {
 pub struct Problem {
     pub content_type: String,
     pub instance_uid: String,
-    pub vertexes_x: Vec<SerializableCoord>,
-    pub vertexes_y: Vec<SerializableCoord>,
+    pub points_x: Vec<SerializableCoord>,
+    pub points_y: Vec<SerializableCoord>,
     pub triangulations: Vec<Vec<(usize, usize)>>,
 }
 
@@ -59,7 +65,19 @@ struct Solution {
     flips: Vec<FlipsOfATriangulation>,
 }
 
-pub fn load_problem(file_name: &str) -> Problem {
+pub fn scan_all_examples_file_name() -> impl Iterator<Item = PathBuf> {
+    let dir = read_dir("examples").unwrap();
+    dir.filter_map(|f| {
+        let f = f.unwrap();
+        if f.path().is_file() && (f.path().extension().unwrap() == "json") {
+            Some(f.path())
+        } else {
+            None
+        }
+    })
+}
+
+pub fn load_problem(file_name: impl AsRef<Path>) -> Problem {
     let file = File::open(file_name).unwrap();
     let reader = BufReader::new(file);
     serde_json::from_reader(reader).unwrap()
@@ -73,24 +91,45 @@ pub fn save_solution(file_name: &str, solution: &Solution) {
 
 pub fn assemb_vertexes_of_a_problem(problem: &Problem) -> TiVec<VertexIndex, Vertex> {
     problem
-        .vertexes_x
+        .points_x
         .iter()
-        .zip(problem.vertexes_y.iter())
+        .zip(problem.points_y.iter())
         .map(|(a, b)| Vertex::new(**a, **b))
         .collect()
 }
 
-pub fn assemb_triangulations_edges<'a>(triangulations: &Vec<Vec<(usize, usize)>>, vertexes: &'a TiSlice<VertexIndex, Vertex>) -> TiVec<TriangulationIndex, TiVec<IndexedEdgeIndex, IndexedEdge>> {
-    triangulations.iter().map(|triangulation| {
-        triangulation.iter().map(|(v0, v1)| (VertexIndex::from(*v0), VertexIndex::from(*v1))).map(|(v0, v1)| {
-            IndexedEdge::new([v0, v1])
-        }).collect()
-    } ).collect()
+pub fn assemb_triangulations_edges<'a>(
+    triangulations: &Vec<Vec<(usize, usize)>>,
+    border_edges: &TiSlice<IndexedEdgeIndex, IndexedEdge>,
+) -> TiVec<TriangulationIndex, TiVec<IndexedEdgeIndex, IndexedEdge>> {
+    let border_edges_filter: HashSet<_> = border_edges.iter().map(|e| e.normalize()).collect();
+    triangulations
+        .iter()
+        .map(|triangulation| {
+            triangulation
+                .iter()
+                .map(|(v0, v1)| (VertexIndex::from(*v0), VertexIndex::from(*v1)))
+                .filter_map(|(v0, v1)| {
+                    let edge = IndexedEdge::new([v0, v1]);
+                    if !border_edges_filter.contains(&edge.normalize()) {
+                        Some(edge)
+                    } else {
+                        None
+                    }
+                })
+                .collect()
+        })
+        .collect()
 }
 
-pub fn scan_border_edges(vertexes: & TiSlice<VertexIndex, Vertex>) -> TiVec<IndexedEdgeIndex, IndexedEdge> {
+pub fn scan_border_edges(
+    vertexes: &TiSlice<VertexIndex, Vertex>,
+) -> TiVec<IndexedEdgeIndex, IndexedEdge> {
     let sorted = {
-        let mut temp = (0..vertexes.len()).map(|i| VertexIndex::from(i)).collect::<Vec<_>>().into_boxed_slice();
+        let mut temp = (0..vertexes.len())
+            .map(|i| VertexIndex::from(i))
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
         temp.sort_by_key(|&index| vertexes[index]);
         temp
     };
@@ -120,7 +159,11 @@ pub fn scan_border_edges(vertexes: & TiSlice<VertexIndex, Vertex>) -> TiVec<Inde
         .collect()
 }
 
-pub fn build_graphs_of_a_problem(triangulations: & TiSlice<TriangulationIndex, TiVec<IndexedEdgeIndex, IndexedEdge>>, border_edges: & TiSlice<IndexedEdgeIndex, IndexedEdge>, vertexes: & TiSlice<VertexIndex, Vertex>) -> Box<[Graph]> {
+pub fn build_graphs_of_a_problem(
+    triangulations: &TiSlice<TriangulationIndex, TiVec<IndexedEdgeIndex, IndexedEdge>>,
+    border_edges: &TiSlice<IndexedEdgeIndex, IndexedEdge>,
+    vertexes: &TiSlice<VertexIndex, Vertex>,
+) -> Box<[Graph]> {
     triangulations
         .iter()
         .map(|f| Graph::new(&vertexes, &*f, border_edges))

@@ -1,15 +1,12 @@
-use std::{hash::Hash, todo};
+use pathfinding::{directed::astar::astar, num_traits::Zero};
 
-use crate::graph::{graph::Graph, quadrilateral::Quadrilateral};
+use crate::graph::graph::UIndex;
 
+pub trait AStarSearchable<C>: PartialEq + Sized
+where
+    C: Zero + Ord + Copy,
+{
+    fn successors(&self) -> impl IntoIterator<Item = (Self, C)>;
 
-
-#[derive(PartialEq, Eq, Hash)]
-pub struct GraphAsFlipGraphNode(Graph);
-
-impl GraphAsFlipGraphNode {
-    
-    pub fn get_neibors(&self) -> Vec<Self> {
-        todo!()
-    }
+    fn heuristic(&self, target: Self) -> C;
 }

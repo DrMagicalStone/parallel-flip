@@ -1,8 +1,14 @@
 use std::{
-    cmp::Ordering, fmt::{Debug, Display}, ops::{Add, Mul, Neg, Sub}, write,
+    cmp::Ordering,
+    fmt::{Debug, Display},
+    ops::{Add, Mul, Neg, Sub},
+    write,
 };
 
-use crate::graph::{edge::Edge, vertex::{Coord, Vertex}};
+use crate::graph::{
+    edge::Edge,
+    vertex::{Coord, Vertex},
+};
 
 ///A vec2c is a "2"-dimensional vector of "Coord" type.
 ///
@@ -101,6 +107,10 @@ impl Vec2C {
 
     pub fn cross(self, rhs: Self) -> Coord {
         self.x * rhs.y - self.y * rhs.x
+    }
+
+    pub fn get_orthogonal(&self) -> Self {
+        Self::new(-self.y, self.x)
     }
 
     pub fn orientation(self, rhs: Self) -> Orientation {
