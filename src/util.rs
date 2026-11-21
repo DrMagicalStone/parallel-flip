@@ -1,3 +1,5 @@
+pub mod parallel_typed_index_iter;
+
 use std::{
     collections::{BTreeSet, HashSet},
     fs::{File, read_dir},
