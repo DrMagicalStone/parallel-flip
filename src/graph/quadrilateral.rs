@@ -41,11 +41,18 @@ impl Clone for Quadrilateral {
 impl Copy for Quadrilateral {}
 
 impl Quadrilateral {
-    pub fn new(vertexes: [Vertex; 4]) -> Self {
-        Quadrilateral {
-            vertexes: Cyclic4Indexed::new(vertexes),
-            flippable: check_is_flippable(vertexes[0], vertexes[1], vertexes[2], vertexes[3]),
+    pub fn new(mut vertexes: [Vertex; 4]) -> (Self, bool) {
+        let need_rotate = (vertexes[2] > vertexes[0]);
+        if need_rotate {
+            vertexes.rotate_left(2);
         }
+        (
+            Quadrilateral {
+                vertexes: Cyclic4Indexed::new(vertexes),
+                flippable: check_is_flippable(vertexes[0], vertexes[1], vertexes[2], vertexes[3]),
+            },
+            need_rotate,
+        )
     }
 
     pub fn get_vertexes_in_slice(&self) -> [Vertex; 4] {

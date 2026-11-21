@@ -117,42 +117,40 @@ fn find_quadrilaterals(
             debug_assert!(triangle_on_neg_side.len() > 0);
             debug_assert!(triangle_on_pos_side.len() > 0);
             {
-                quads.push((
-                    Quadrilateral::new([
-                        vertexes[vertex_pair[0]],
-                        vertexes[edges[*triangle_on_neg_side[0].0]
-                            .get_another_vertex_index(vertex_pair[0])],
-                        vertexes[vertex_pair[1]],
-                        vertexes[edges[*triangle_on_pos_side[0].0]
-                            .get_another_vertex_index(vertex_pair[0])],
-                    ]),
-                    [
-                        if triangle_on_neg_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len())
-                        {
-                            Some(*triangle_on_neg_side[0].0)
-                        } else {
-                            None
-                        },
-                        if triangle_on_neg_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len())
-                        {
-                            Some(*triangle_on_neg_side[0].1)
-                        } else {
-                            None
-                        },
-                        if triangle_on_pos_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len())
-                        {
-                            Some(*triangle_on_pos_side[0].1)
-                        } else {
-                            None
-                        },
-                        if triangle_on_pos_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len())
-                        {
-                            Some(*triangle_on_pos_side[0].0)
-                        } else {
-                            None
-                        },
-                    ],
-                ));
+                let (quadrilateral, need_rotate) = Quadrilateral::new([
+                    vertexes[vertex_pair[0]],
+                    vertexes[edges[*triangle_on_neg_side[0].0]
+                        .get_another_vertex_index(vertex_pair[0])],
+                    vertexes[vertex_pair[1]],
+                    vertexes[edges[*triangle_on_pos_side[0].0]
+                        .get_another_vertex_index(vertex_pair[0])],
+                ]);
+                let mut relation = [
+                    if triangle_on_neg_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len()) {
+                        Some(*triangle_on_neg_side[0].0)
+                    } else {
+                        None
+                    },
+                    if triangle_on_neg_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len()) {
+                        Some(*triangle_on_neg_side[0].1)
+                    } else {
+                        None
+                    },
+                    if triangle_on_pos_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len()) {
+                        Some(*triangle_on_pos_side[0].1)
+                    } else {
+                        None
+                    },
+                    if triangle_on_pos_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len()) {
+                        Some(*triangle_on_pos_side[0].0)
+                    } else {
+                        None
+                    },
+                ];
+                if need_rotate {
+                    relation.rotate_left(2);
+                }
+                quads.push((quadrilateral, relation));
             }
             quads
         });
