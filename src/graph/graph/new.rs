@@ -77,83 +77,86 @@ fn find_quadrilaterals(
     vertex_to_edge: &TiSlice<VertexIndex, &[IndexedEdgeIndex]>,
 ) -> Vec<GraphEntry> {
     let mut quads: TiVec<QuadrilateralIndex, (Quadrilateral, [Option<IndexedEdgeIndex>; 4])> =
-        TiVec::with_capacity(edges_internal.len());
-    edges_internal
-        .iter()
-        .fold(&mut quads, |quads, edge: &IndexedEdge| {
-            let vertex_pair = edge.get_vertex_index_pair();
+        edges_internal
+            .iter()
+            .map(|edge: &IndexedEdge| {
+                let vertex_pair = edge.get_vertex_index_pair();
 
-            let distance_comparator =
-                (vertexes[vertex_pair[1]] - vertexes[vertex_pair[0]]).get_orthogonal();
+                let distance_comparator =
+                    (vertexes[vertex_pair[1]] - vertexes[vertex_pair[0]]).get_orthogonal();
 
-            let (mut triangle_on_pos_side, mut triangle_on_neg_side): (Vec<_>, Vec<_>) =
-                vertex_to_edge[vertex_pair[0]]
-                    .iter()
-                    .cartesian_product(vertex_to_edge[vertex_pair[1]].iter())
-                    .filter_map(|(a, b)| {
-                        debug_assert!(edges[*a].contains(vertex_pair[0]));
-                        debug_assert!(edges[*b].contains(vertex_pair[1]));
-                        if edges[*a].get_another_vertex_index(vertex_pair[0])
-                            == edges[*b].get_another_vertex_index(vertex_pair[1])
+                let (mut triangle_on_pos_side, mut triangle_on_neg_side): (Vec<_>, Vec<_>) =
+                    vertex_to_edge[vertex_pair[0]]
+                        .iter()
+                        .cartesian_product(vertex_to_edge[vertex_pair[1]].iter())
+                        .filter_map(|(a, b)| {
+                            debug_assert!(edges[*a].contains(vertex_pair[0]));
+                            debug_assert!(edges[*b].contains(vertex_pair[1]));
+                            if edges[*a].get_another_vertex_index(vertex_pair[0])
+                                == edges[*b].get_another_vertex_index(vertex_pair[1])
+                            {
+                                Some((
+                                    a,
+                                    b,
+                                    distance_comparator
+                                        * Edge::new([
+                                            vertexes[vertex_pair[0]],
+                                            vertexes[edges[*a]
+                                                .get_another_vertex_index(vertex_pair[0])],
+                                        ])
+                                        .as_vec2c(),
+                                ))
+                            } else {
+                                None
+                            }
+                        })
+                        .partition(|&t| t.2 > Coord::ZERO);
+                triangle_on_neg_side.sort_by_key(|v| -v.2);
+                triangle_on_pos_side.sort_by_key(|v| v.2);
+                debug_assert!(triangle_on_neg_side.len() > 0);
+                debug_assert!(triangle_on_pos_side.len() > 0);
+                {
+                    let (quadrilateral, need_rotate) = Quadrilateral::new([
+                        vertexes[vertex_pair[0]],
+                        vertexes[edges[*triangle_on_neg_side[0].0]
+                            .get_another_vertex_index(vertex_pair[0])],
+                        vertexes[vertex_pair[1]],
+                        vertexes[edges[*triangle_on_pos_side[0].0]
+                            .get_another_vertex_index(vertex_pair[0])],
+                    ]);
+                    let mut relation = [
+                        if triangle_on_neg_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len())
                         {
-                            Some((
-                                a,
-                                b,
-                                distance_comparator
-                                    * Edge::new([
-                                        vertexes[vertex_pair[0]],
-                                        vertexes
-                                            [edges[*a].get_another_vertex_index(vertex_pair[0])],
-                                    ])
-                                    .as_vec2c(),
-                            ))
+                            Some(*triangle_on_neg_side[0].0)
                         } else {
                             None
-                        }
-                    })
-                    .partition(|&t| t.2 > Coord::ZERO);
-            triangle_on_neg_side.sort_by_key(|v| -v.2);
-            triangle_on_pos_side.sort_by_key(|v| v.2);
-            debug_assert!(triangle_on_neg_side.len() > 0);
-            debug_assert!(triangle_on_pos_side.len() > 0);
-            {
-                let (quadrilateral, need_rotate) = Quadrilateral::new([
-                    vertexes[vertex_pair[0]],
-                    vertexes[edges[*triangle_on_neg_side[0].0]
-                        .get_another_vertex_index(vertex_pair[0])],
-                    vertexes[vertex_pair[1]],
-                    vertexes[edges[*triangle_on_pos_side[0].0]
-                        .get_another_vertex_index(vertex_pair[0])],
-                ]);
-                let mut relation = [
-                    if triangle_on_neg_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len()) {
-                        Some(*triangle_on_neg_side[0].0)
-                    } else {
-                        None
-                    },
-                    if triangle_on_neg_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len()) {
-                        Some(*triangle_on_neg_side[0].1)
-                    } else {
-                        None
-                    },
-                    if triangle_on_pos_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len()) {
-                        Some(*triangle_on_pos_side[0].1)
-                    } else {
-                        None
-                    },
-                    if triangle_on_pos_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len()) {
-                        Some(*triangle_on_pos_side[0].0)
-                    } else {
-                        None
-                    },
-                ];
-                if need_rotate {
-                    relation.rotate_left(2);
+                        },
+                        if triangle_on_neg_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len())
+                        {
+                            Some(*triangle_on_neg_side[0].1)
+                        } else {
+                            None
+                        },
+                        if triangle_on_pos_side[0].1 < &IndexedEdgeIndex::from(edges_internal.len())
+                        {
+                            Some(*triangle_on_pos_side[0].1)
+                        } else {
+                            None
+                        },
+                        if triangle_on_pos_side[0].0 < &IndexedEdgeIndex::from(edges_internal.len())
+                        {
+                            Some(*triangle_on_pos_side[0].0)
+                        } else {
+                            None
+                        },
+                    ];
+                    if need_rotate {
+                        relation.rotate_left(2);
+                    }
+                    (quadrilateral, relation)
                 }
-                quads.push((quadrilateral, relation));
-            }
-            quads
-        });
+            })
+            .collect();
     let quads: Vec<_> = quads
         .iter()
         .enumerate()
