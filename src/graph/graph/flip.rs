@@ -98,10 +98,10 @@ impl Graph {
 pub(super) fn sort_quadrilaterals_get_numbers_of_flippable(
     data: &mut TiSlice<UIndex, GraphEntry>,
 ) -> UIndex {
-    let (mut new_indexes, numbers_of_flippable) =
+    let (mut new_indexes_to_old_indexes, numbers_of_flippable) =
         replace_index_of_flippable_to_top_get_numbers_of_flippable(data);
     {
-        let (flippables, not_flippables) = new_indexes.split_at_mut(numbers_of_flippable);
+        let (flippables, not_flippables) = new_indexes_to_old_indexes.split_at_mut(numbers_of_flippable);
         const ORIGIN: Vertex = Vertex::ORIGIN;
         let sort_by = |i: &UIndex| {
             let q = data[*i].0;
@@ -110,6 +110,14 @@ pub(super) fn sort_quadrilaterals_get_numbers_of_flippable(
         };
         flippables.sort_by_key(sort_by);
         not_flippables.sort_by_key(sort_by);
+    }
+
+    let mut old_indexes_to_new_indexes: TiVec<UIndex, UIndex> = ti_vec![UIndex::ZERO; data.len()];
+
+    {
+        for new_index in (0..data.len()).map(|x| UIndex::from(x)) {
+            old_indexes_to_new_indexes[new_indexes_to_old_indexes[new_index]] = new_index;
+        }
     }
 
     let mut visited: TiVec<UIndex, bool> = ti_vec![false; data.len()];
@@ -123,7 +131,7 @@ pub(super) fn sort_quadrilaterals_get_numbers_of_flippable(
         let mut current = data[index_current];
 
         loop {
-            let index_next = new_indexes[index_current];
+            let index_next = old_indexes_to_new_indexes[index_current];
             (data[index_next], current) = (current, data[index_next]);
             visited[index_next] = true;
             if index_next == index_start {
@@ -141,7 +149,7 @@ pub(super) fn sort_quadrilaterals_get_numbers_of_flippable(
             .into_iter()
             .for_each(|index_on_edge| {
                 if let Some(index_on_edge) = index_on_edge {
-                    *index_on_edge = new_indexes[*index_on_edge];
+                    *index_on_edge = old_indexes_to_new_indexes[*index_on_edge];
                 }
             });
     }
@@ -160,7 +168,7 @@ fn replace_index_of_flippable_to_top_get_numbers_of_flippable(
             if index_forward == index_backward {
                 break 'out;
             }
-            if !data[index_forward].0.is_flippable() {
+            if !data[new_indexes[index_forward]].0.is_flippable() {
                 break;
             }
             index_forward = index_forward + 1;
@@ -169,7 +177,7 @@ fn replace_index_of_flippable_to_top_get_numbers_of_flippable(
             if index_forward == index_backward {
                 break 'out;
             }
-            if data[index_backward].0.is_flippable() {
+            if data[new_indexes[index_backward]].0.is_flippable() {
                 break;
             }
             index_backward = index_backward - 1;
@@ -177,7 +185,7 @@ fn replace_index_of_flippable_to_top_get_numbers_of_flippable(
         (new_indexes[index_forward], new_indexes[index_backward]) =
             (new_indexes[index_backward], new_indexes[index_forward]);
     }
-    if index_forward == UIndex::from(data.len())
+    if index_forward == UIndex::from(data.len() - 1)
         && data[new_indexes[index_forward]].0.is_flippable()
     {
         return (new_indexes, index_forward + 1);
